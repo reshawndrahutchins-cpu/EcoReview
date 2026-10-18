@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EcoQuest Escape Room</title>
+<style>
+  :root{
+    --ink:#15324a; --teal:#0d7885; --leaf:#27764c; --sky:#eaf5f5;
+    --sand:#f4ead4; --gold:#d99a30; --coral:#c65f3e; --paper:#fffdf8;
+    --muted:#55717b; --line:#c9dde0;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; color:var(--ink); font-family:Arial,Helvetica,sans-serif;
+    background:
+      radial-gradient(circle at 10% 10%, rgba(65,150,129,.18) 0 2px, transparent 3px) 0 0/28px 28px,
+      linear-gradient(135deg,#e5f0ef,#f7f1e6 55%,#dfeeed);
+  }
+  header{
+    padding:18px clamp(18px,5vw,70px); background:var(--ink); color:white;
+    display:flex; gap:20px; justify-content:space-between; align-items:center;
+    border-bottom:5px solid var(--gold);
+  }
+  .brand{font-weight:900; letter-spacing:1px; font-size:1.05rem}
+  .status{font-size:.9rem; color:#d8f3ef}
+  main{max-width:1160px; margin:auto; padding:28px 20px 60px}
+  .hero,.panel,.lock{background:rgba(255,253,248,.94); border:1px solid var(--line); border-radius:18px; box-shadow:0 10px 24px rgba(21,50,74,.10)}
+  .hero{padding:clamp(25px,5vw,55px); position:relative; overflow:hidden}
+  .hero:after{content:""; position:absolute; width:320px;height:320px; right:-110px;top:-115px; border:28px solid rgba(13,120,133,.13); border-radius:50%}
+  h1,h2,h3,p{margin-top:0}
+  h1{font-size:clamp(2.1rem,5vw,4rem); max-width:730px; margin-bottom:12px}
+  h2{font-size:1.55rem;margin-bottom:8px}
+  .eyebrow{color:var(--teal);font-weight:800;letter-spacing:1.2px;font-size:.8rem}
+  .lead{font-size:1.12rem;max-width:720px;line-height:1.6;color:#315568}
+  .button{
+    border:0; border-radius:10px; padding:13px 19px; font-weight:800; cursor:pointer;
+    background:var(--teal); color:#fff; font-size:1rem; transition:.2s transform,.2s background;
+  }
+  .button:hover{transform:translateY(-2px);background:#075d68}
+  .button.secondary{background:#eef6f5;color:var(--ink);border:1px solid var(--line)}
+  .button.gold{background:var(--gold)}
+  .briefing{display:grid;grid-template-columns:1.1fr .9fr; gap:20px; margin-top:22px}
+  .panel{padding:22px}
+  .role-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .role{padding:11px;background:var(--sky);border-left:4px solid var(--teal);border-radius:7px;font-size:.92rem}
+  .progress{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:28px 0}
+  .step{padding:10px 7px;border-radius:10px;text-align:center;background:#e6ecea;color:#6c7e83;font-weight:700;font-size:.77rem;border:1px solid #cfdddc}
+  .step.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .step.done{background:var(--leaf);color:#fff;border-color:var(--leaf)}
+  #game{display:none}
+  .lock{padding:clamp(18px,4vw,38px)}
+  .lock-top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:20px}
+  .badge{background:var(--gold);color:#fff;padding:8px 12px;border-radius:999px;font-size:.8rem;font-weight:800;white-space:nowrap}
+  .mission{color:var(--muted);line-height:1.5}
+  .challenge{margin:16px 0;padding:17px;border-radius:12px;background:linear-gradient(90deg,#f0f8f7,#fffdf8);border-left:5px solid var(--teal)}
+  .challenge h3{font-size:1rem;margin-bottom:8px}
+  .challenge p{line-height:1.5;margin-bottom:12px}
+  input,textarea{
+    width:100%; border:1px solid #a9c6c8; border-radius:8px; padding:11px;
+    color:var(--ink); background:white; font:inherit;
+  }
+  textarea{min-height:70px;resize:vertical}
+  .hint{margin-top:9px;display:none;background:#fff4d9;color:#785215;padding:10px 12px;border-radius:8px;font-size:.9rem}
+  .hint.show{display:block}
+  .tools{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .feedback{margin-top:16px;padding:13px;border-radius:9px;font-weight:700;display:none}
+  .feedback.good{display:block;background:#e2f5e8;color:#1b633b}
+  .feedback.try{display:block;background:#fff0e8;color:#934524}
+  .timer{font-weight:800;color:var(--gold)}
+  .final{display:none;text-align:center;padding:42px 20px}
+  .final .seal{width:125px;height:125px;border:9px solid var(--leaf);border-radius:50%;display:grid;place-items:center;margin:0 auto 20px;color:var(--leaf);font-size:2.7rem}
+  .final p{max-width:700px;margin:0 auto 20px;line-height:1.6}
+  .small{font-size:.86rem;color:var(--muted)}
+  @media(max-width:720px){.briefing{grid-template-columns:1fr}.progress{grid-template-columns:repeat(5,minmax(58px,1fr));overflow:auto}.role-list{grid-template-columns:1fr}.lock-top{flex-direction:column}.step{font-size:.65rem}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">ECOQUEST ESCAPE ROOM</div>
+  <div class="status">Time remaining: <span class="timer" id="timer">45:00</span></div>
+</header>
+
+<main>
+  <section class="hero" id="intro">
+    <div class="eyebrow">ENVIRONMENTAL MANAGEMENT • UNITS 1–2</div>
+    <h1>Escape the Environmental Crisis</h1>
+    <p class="lead">A storm has locked the Environmental Response Center. Your team must restore five systems by using precise environmental science and credible evidence. Each verified lock gives you access to the next emergency terminal.</p>
+    <button class="button gold" onclick="startGame()">Begin Mission</button>
+
+    <div class="briefing">
+      <div class="panel">
+        <h2>Your mission</h2>
+        <p class="mission">Solve three challenges at each terminal. Record a clear scientific answer, calculation, or justification. The teacher verifies each lock before your team advances.</p>
+        <p class="small"><strong>Learning target:</strong> Apply environmental-management concepts and research methods to explain systems, interpret data, and justify cautious conclusions.</p>
+      </div>
+      <div class="panel">
+        <h2>Team roles</h2>
+        <div class="role-list">
+          <div class="role"><strong>Facilitator</strong><br>Invites every voice.</div>
+          <div class="role"><strong>Evidence Checker</strong><br>Asks “because?”</div>
+          <div class="role"><strong>Recorder</strong><br>Captures thinking.</div>
+          <div class="role"><strong>Reporter</strong><br>Shares the code.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="game">
+    <div class="progress" id="progress"></div>
+    <article class="lock" id="lock"></article>
+    <section class="final hero" id="final">
+      <div class="seal">✓</div>
+      <div class="eyebrow">MISSION COMPLETE</div>
+      <h1>The Response Center Is Restored</h1>
+      <p>Your team unlocked all five terminals. Before you leave, write one evidence-based recommendation for an environmental manager.</p>
+      <textarea id="finalResponse" placeholder="Environmental managers should..."></textarea>
+      <p class="small" style="margin-top:16px">Debrief: Which lock required the strongest evidence? Which explanation would you improve?</p>
+      <button class="button gold" onclick="saveReflection()">Complete Escape</button>
+      <p id="reflectionMessage" class="small"></p>
+    </section>
+  </section>
+</main>
+
+<script>
+const locks = [
+  {
+    name:"Global Briefing",
+    mission:"Recover the world systems access code.",
+    code:"75 4 FUTURE",
+    tasks:[
+      {q:"Name the seven continents. Then name the ocean between Africa, Asia, and Australia/Oceania.", hint:"Picture the eastern hemisphere.", keys:["africa","antarctica","asia","australia","europe","north america","south america","indian"]},
+      {q:"What measure does the World Bank use to classify countries by income? List the four groups from lowest to highest.", hint:"The measure is reported per person.", keys:["gni","low","lower-middle","upper-middle","high"]},
+      {q:"A city can expand a landfill into a wetland or fund composting and recycling. Which choice better reflects sustainability? Explain.", hint:"Refer to present and future needs.", keys:["compost","future"]}
+    ]
+  },
+  {
+    name:"Water and Atmosphere Vault",
+    mission:"Stabilize the planet’s life-support systems.",
+    code:"T RAIN N2 STRAT",
+    tasks:[
+      {q:"Water vapor released by plant leaves enters the atmosphere. Name this water-cycle transfer.", hint:"It begins with trans-.", keys:["transpiration"]},
+      {q:"Put these in a plausible order after rain falls on a wooded hillside: condensation, precipitation, infiltration, groundwater flow, evaporation.", hint:"Start in the clouds.", keys:["condensation","precipitation","infiltration","groundwater","evaporation"]},
+      {q:"Name the four required atmospheric gases. Which is most abundant?", hint:"Chemical symbols are acceptable.", keys:["nitrogen","oxygen","argon","carbon dioxide"]}
+    ]
+  },
+  {
+    name:"Ecological Network",
+    mission:"Reconnect the damaged ecosystem model.",
+    code:"S O P ENERGY",
+    tasks:[
+      {q:"Which atmospheric layer contains the ozone layer, and what is ozone’s main role there?", hint:"The layer lies above the troposphere.", keys:["stratosphere","ultraviolet"]},
+      {q:"A herd of deer lives in a forest with trees, fungi, soil, water, and climate. Identify the population and the ecosystem.", hint:"One species is a population.", keys:["deer","ecosystem"]},
+      {q:"In grass → grasshopper → frog → snake → hawk, identify the producer and explain why the hawk receives less energy.", hint:"Think photosynthesis and energy loss.", keys:["grass","heat"]}
+    ]
+  },
+  {
+    name:"Field Research Lab",
+    mission:"Repair the investigation protocol before the next field season.",
+    code:"I D C SYSTEM LINE",
+    tasks:[
+      {q:"Students test whether shade affects soil temperature. Identify the independent variable, dependent variable, and one controlled variable.", hint:"What is changed, measured, and held steady?", keys:["shade","temperature"]},
+      {q:"A researcher measures soil moisture every 5 meters along a streambank. Which sampling method fits best? Explain.", hint:"Locations follow a fixed interval.", keys:["systematic","interval"]},
+      {q:"Dissolved oxygen is measured monthly for one year. Which graph best shows the pattern over time, and why?", hint:"The independent variable is time.", keys:["line","time"]}
+    ]
+  },
+  {
+    name:"Evidence Command Center",
+    mission:"Use data responsibly to send the final rescue signal.",
+    code:"17.5 13 BIAS CAUTION",
+    tasks:[
+      {q:"Native plant counts are 12, 18, 15, and 25. Calculate the mean and range.", hint:"Mean is total divided by the number of values.", keys:["17.5","13"]},
+      {q:"A team samples only the easy-to-reach edge of a park and claims it represents the whole park. Identify one bias and one improvement.", hint:"Did every area have an equal chance to be sampled?", keys:["bias","random"]},
+      {q:"After stream restoration, richness rises from 8 to 13 taxa at three downstream sites. Give a cautious conclusion and one additional evidence need before claiming causation.", hint:"Association alone does not prove cause.", keys:["increased","control"]}
+    ]
+  }
+];
+
+let current=0, seconds=2700, clock;
+function startGame(){
+  document.getElementById("intro").style.display="none";
+  document.getElementById("game").style.display="block";
+  render();
+  clock=setInterval(()=>{
+    seconds=Math.max(0,seconds-1);
+    const m=String(Math.floor(seconds/60)).padStart(2,"0");
+    const s=String(seconds%60).padStart(2,"0");
+    document.getElementById("timer").textContent=`${m}:${s}`;
+  },1000);
+}
+function render(){
+  const progress=document.getElementById("progress");
+  progress.innerHTML=locks.map((l,i)=>`<div class="step ${i<current?"done":i===current?"active":""}">Lock ${i+1}<br>${l.name}</div>`).join("");
+  if(current>=locks.length){
+    document.getElementById("lock").style.display="none";
+    document.getElementById("final").style.display="block";
+    clearInterval(clock);
+    return;
+  }
+  const lock=locks[current];
+  document.getElementById("lock").style.display="block";
+  document.getElementById("final").style.display="none";
+  document.getElementById("lock").innerHTML=`
+    <div class="lock-top">
+      <div><div class="eyebrow">LOCK ${current+1} OF 5</div><h2>${lock.name}</h2><p class="mission">${lock.mission}</p></div>
+      <div class="badge">ACCESS CODE REQUIRED</div>
+    </div>
+    ${lock.tasks.map((t,i)=>`
+      <section class="challenge">
+        <h3>Challenge ${current*3+i+1}</h3>
+        <p>${t.q}</p>
+        <textarea id="answer${i}" placeholder="Record your team’s scientific answer..."></textarea>
+        <button class="button secondary" style="margin-top:9px;padding:8px 11px;font-size:.85rem" onclick="hint(${i})">Use one hint</button>
+        <div class="hint" id="hint${i}">${t.hint}</div>
+      </section>`).join("")}
+    <div class="tools">
+      <button class="button" onclick="checkLock()">Check our evidence</button>
+      <button class="button secondary" onclick="teacherCode()">Teacher verification</button>
+    </div>
+    <div id="feedback" class="feedback"></div>`;
+}
+function hint(i){document.getElementById("hint"+i).classList.add("show")}
+function checkLock(){
+  const lock=locks[current];
+  const correct=lock.tasks.map((t,i)=>{
+    const response=document.getElementById("answer"+i).value.toLowerCase();
+    return t.keys.every(k=>response.includes(k));
+  });
+  const f=document.getElementById("feedback");
+  if(correct.every(Boolean)){
+    f.className="feedback good";
+    f.textContent="Your evidence is strong. Ask the teacher to verify your access code.";
+  }else{
+    const missing=correct.map((v,i)=>v?null:i+1).filter(Boolean).join(", ");
+    f.className="feedback try";
+    f.textContent=`Recheck Challenge ${missing}. Use the hint or strengthen the scientific explanation.`;
+  }
+}
+function teacherCode(){
+  const attempt=prompt("Teacher: enter the verified access code for this lock.");
+  if(attempt && attempt.trim().toUpperCase()===locks[current].code.toUpperCase()){
+    current++;
+    render();
+  } else if(attempt!==null){
+    const f=document.getElementById("feedback");
+    f.className="feedback try"; f.textContent="That code is not verified yet. Recheck the evidence and try again.";
+  }
+}
+function saveReflection(){
+  const r=document.getElementById("finalResponse").value.trim();
+  document.getElementById("reflectionMessage").textContent =
+    r ? "Reflection recorded. Congratulations, Environmental Response Team." : "Add a recommendation before completing the escape.";
+}
+</script>
+</body>
+</html>
